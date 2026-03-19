@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DealChecker — Recording Contract Analyzer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b10;--bg2:#0f1318;--bg3:#161c24;
+  --border:#1e2530;--border2:#2a3340;
+  --gold:#f0b429;--red:#e53e3e;--red2:#fc8181;
+  --orange:#dd6b20;--orange2:#f6ad55;
+  --green:#2f855a;--green2:#68d391;
+  --yellow:#d69e2e;--yellow2:#faf089;
+  --text:#e2e8f0;--text2:#a0aec0;--text3:#718096;
+  --r:12px;--r2:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;height:64px;position:sticky;top:0;background:rgba(8,11,16,.92);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;letter-spacing:-.02em}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#e67e22);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo span{color:var(--gold)}
+.hero{text-align:center;padding:4rem 2rem 2.5rem;max-width:680px;margin:0 auto}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.25);color:var(--gold);padding:4px 12px;border-radius:99px;font-size:.78rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:1.2rem}
+.hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero p{color:var(--text2);font-size:1.05rem;max-width:520px;margin:0 auto}
+.input-section{max-width:760px;margin:0 auto 1rem;padding:0 1.5rem}
+.examples-strip{margin-bottom:1.2rem}
+.examples-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:.6rem}
+.examples-row{display:flex;gap:8px;flex-wrap:wrap}
+.example-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text2);font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s}
+.example-btn:hover{border-color:var(--gold);color:var(--text)}
+.example-dot{width:8px;height:8px;border-radius:50%}
+.example-dot.red{background:var(--red2)}.example-dot.yellow{background:var(--yellow2)}.example-dot.green{background:var(--green2)}
+.tab-bar{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:1.2rem;gap:4px}
+.tab-btn{flex:1;padding:9px;background:transparent;border:none;color:var(--text3);font-size:.9rem;font-weight:500;cursor:pointer;border-radius:9px;transition:all .2s}
+.tab-btn.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.tab-btn:hover:not(.active){color:var(--text2)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:3.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s;background:var(--bg2);position:relative}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:rgba(240,180,41,.04)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:2.8rem;margin-bottom:1rem;display:block}
+.drop-zone h3{font-size:1rem;font-weight:600;margin-bottom:.4rem}
+.drop-zone p{color:var(--text3);font-size:.875rem}
+.file-name{margin-top:1rem;padding:8px 14px;background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.3);border-radius:var(--r2);color:var(--gold);font-size:.875rem;font-weight:500;display:inline-block}
+.paste-area{width:100%;min-height:280px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:.9rem;padding:1.2rem;resize:vertical;outline:none;font-family:inherit;line-height:1.7;transition:border-color .2s}
+.paste-area::placeholder{color:var(--text3)}.paste-area:focus{border-color:var(--gold)}
+.analyze-btn{width:100%;margin-top:1rem;padding:14px;background:linear-gradient(135deg,var(--gold),#e67e22);border:none;border-radius:var(--r);color:#0a0000;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.analyze-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(240,180,41,.3)}
+.analyze-btn:active{transform:translateY(0)}
+.analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.error-box{background:rgba(229,62,62,.08);border:1px solid rgba(229,62,62,.25);border-radius:var(--r);padding:1.5rem;color:var(--red2);font-size:.9rem;margin:1rem 0;display:none}
+.error-box.show{display:block}.error-box strong{display:block;margin-bottom:.4rem}
+.methodology-note{text-align:center;color:var(--text3);font-size:.78rem;padding:.5rem 1.5rem 2rem;max-width:680px;margin:0 auto;line-height:1.6}
+.loading{display:none;flex-direction:column;align-items:center;padding:4rem 2rem;gap:1.2rem}
+.loading.show{display:flex}
+.spinner{width:48px;height:48px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-steps{list-style:none;display:flex;flex-direction:column;gap:6px}
+.loading-step{color:var(--text3);font-size:.85rem;display:flex;align-items:center;gap:8px}
+.loading-step.done{color:var(--green2)}.loading-step.active{color:var(--gold)}
+.step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+#results{display:none;max-width:900px;margin:0 auto;padding:0 1.5rem 4rem}
+#results.show{display:block}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
+.results-header h2{font-size:1.4rem;font-weight:700}
+.new-analysis-btn{padding:8px 18px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r2);cursor:pointer;font-size:.875rem;transition:all .2s}
+.new-analysis-btn:hover{border-color:var(--gold);color:var(--gold)}
+.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:2rem;display:flex;align-items:center;gap:2.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.score-circle-wrap{flex-shrink:0}
+.score-circle{width:140px;height:140px;position:relative}
+.score-svg{transform:rotate(-90deg)}
+.score-bg{fill:none;stroke:var(--border2);stroke-width:10}
+.score-arc{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:377;stroke-dashoffset:377;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1),stroke .3s}
+.score-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-number{font-size:2.4rem;font-weight:800;line-height:1;letter-spacing:-.04em}
+.score-out{font-size:.7rem;color:var(--text3);margin-top:2px}
+.score-info{flex:1;min-width:200px}
+.score-grade{font-size:1.2rem;font-weight:700;margin-bottom:.5rem}
+.score-rationale{color:var(--text2);font-size:.9rem;line-height:1.7}
+.alert-banner{display:none;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--r2);margin-bottom:1.5rem;font-size:.875rem;font-weight:500}
+.alert-banner.show{display:flex}
+.alert-banner.danger{background:rgba(229,62,62,.1);border:1px solid rgba(229,62,62,.3);color:var(--red2)}
+.section-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.9rem;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.terms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.9rem;margin-bottom:1.5rem}
+.term-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.3rem;cursor:pointer;transition:all .18s;position:relative}
+.term-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.term-card:hover::after{content:'tap for details';position:absolute;bottom:8px;right:10px;font-size:.65rem;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+.term-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.term-name{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.rating-dot{width:8px;height:8px;border-radius:50%}
+.rating-dot.good{background:var(--green2);box-shadow:0 0 6px var(--green2)}
+.rating-dot.neutral{background:var(--yellow2);box-shadow:0 0 6px var(--yellow2)}
+.rating-dot.bad{background:var(--red2);box-shadow:0 0 6px var(--red2)}
+.rating-dot.unknown{background:var(--text3)}
+.term-value{font-size:.95rem;font-weight:600;margin-bottom:.35rem;color:var(--text)}
+.term-summary{font-size:.78rem;color:var(--text3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ownership-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.4rem}
+.ownership-badge.artist{background:rgba(104,211,145,.15);color:var(--green2);border:1px solid rgba(104,211,145,.3)}
+.ownership-badge.label{background:rgba(229,62,62,.12);color:var(--red2);border:1px solid rgba(229,62,62,.3)}
+.ownership-badge.lease{background:rgba(246,173,85,.12);color:var(--orange2);border:1px solid rgba(246,173,85,.3)}
+.ownership-badge.unclear{background:rgba(160,174,192,.1);color:var(--text3);border:1px solid var(--border2)}
+.red-flags{margin-bottom:1.5rem}
+.flag-card{background:var(--bg2);border-radius:var(--r);overflow:hidden;margin-bottom:.75rem;border:1px solid var(--border);cursor:pointer;transition:all .18s}
+.flag-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.flag-card.critical{border-left:3px solid var(--red)}
+.flag-card.high{border-left:3px solid var(--orange)}
+.flag-card.medium{border-left:3px solid var(--yellow)}
+.flag-header{display:flex;align-items:center;gap:10px;padding:.9rem 1.3rem}
+.severity-badge{padding:2px 9px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0}
+.severity-badge.critical{background:rgba(229,62,62,.15);color:var(--red2)}
+.severity-badge.high{background:rgba(221,107,32,.15);color:var(--orange2)}
+.severity-badge.medium{background:rgba(214,158,46,.15);color:var(--yellow2)}
+.flag-title{font-size:.9rem;font-weight:600;flex:1}
+.flag-preview{font-size:.75rem;color:var(--text3);margin-top:2px}
+.flag-arrow{font-size:.75rem;color:var(--text3);flex-shrink:0}
+.positives-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.8rem;margin-bottom:1.5rem}
+.positive-card{background:rgba(47,133,90,.07);border:1px solid rgba(104,211,145,.2);border-radius:var(--r);padding:.9rem 1.1rem;display:flex;gap:10px;cursor:pointer;transition:all .18s}
+.positive-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.positive-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
+.positive-title{font-size:.875rem;font-weight:600;margin-bottom:.2rem;color:var(--green2)}
+.positive-text{font-size:.78rem;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.summary-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.5rem}
+.summary-box p{color:var(--text2);font-size:.9rem;line-height:1.8;margin-bottom:.8rem}
+.summary-box p:last-child{margin-bottom:0}
+.tips-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:3rem}
+.tip-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:.9rem 1.2rem;font-size:.875rem;color:var(--text2);line-height:1.6}
+.tip-number{width:22px;height:22px;border-radius:50%;background:rgba(240,180,41,.15);color:var(--gold);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.disclaimer{text-align:center;color:var(--text3);font-size:.78rem;padding:2rem 1.5rem;border-top:1px solid var(--border);max-width:620px;margin:2rem auto 0;line-height:1.6}
+
+/* ── DETAIL BUBBLE MODAL ── */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:600;align-items:center;justify-content:center;padding:1rem}
+.detail-overlay.open{display:flex;animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.detail-bubble{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:min(620px,98vw);max-height:90vh;overflow-y:auto;animation:popIn .2s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.bubble-header{padding:1.6rem 1.8rem 1.4rem;border-radius:16px 16px 0 0;position:relative}
+.bubble-header.good{background:linear-gradient(135deg,rgba(47,133,90,.3),rgba(47,133,90,.1));border-bottom:1px solid rgba(104,211,145,.2)}
+.bubble-header.neutral{background:linear-gradient(135deg,rgba(214,158,46,.25),rgba(214,158,46,.08));border-bottom:1px solid rgba(250,240,137,.2)}
+.bubble-header.bad{background:linear-gradient(135deg,rgba(229,62,62,.25),rgba(229,62,62,.08));border-bottom:1px solid rgba(252,129,129,.2)}
+.bubble-header.unknown{background:linear-gradient(135deg,rgba(113,128,150,.2),rgba(113,128,150,.05));border-bottom:1px solid var(--border)}
+.bubble-header.sev-critical{background:linear-gradient(135deg,rgba(229,62,62,.3),rgba(229,62,62,.1));border-bottom:1px solid rgba(252,129,129,.3)}
+.bubble-header.sev-high{background:linear-gradient(135deg,rgba(221,107,32,.25),rgba(221,107,32,.08));border-bottom:1px solid rgba(246,173,85,.2)}
+.bubble-header.sev-medium{background:linear-gradient(135deg,rgba(214,158,46,.2),rgba(214,158,46,.06));border-bottom:1px solid rgba(250,240,137,.15)}
+.bubble-header.positive{background:linear-gradient(135deg,rgba(47,133,90,.25),rgba(47,133,90,.08));border-bottom:1px solid rgba(104,211,145,.2)}
+.bubble-close{position:absolute;top:1.1rem;right:1.2rem;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--text2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.bubble-close:hover{background:rgba(255,255,255,.15);color:var(--text)}
+.bubble-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.7rem}
+.bubble-badge.good{background:rgba(104,211,145,.15);color:var(--green2);border:1px solid rgba(104,211,145,.3)}
+.bubble-badge.neutral{background:rgba(250,240,137,.12);color:var(--yellow2);border:1px solid rgba(250,240,137,.25)}
+.bubble-badge.bad{background:rgba(252,129,129,.12);color:var(--red2);border:1px solid rgba(252,129,129,.25)}
+.bubble-badge.unknown{background:rgba(113,128,150,.1);color:var(--text3);border:1px solid var(--border2)}
+.bubble-badge.critical{background:rgba(252,129,129,.15);color:var(--red2);border:1px solid rgba(252,129,129,.3)}
+.bubble-badge.high{background:rgba(246,173,85,.12);color:var(--orange2);border:1px solid rgba(246,173,85,.25)}
+.bubble-badge.medium{background:rgba(250,240,137,.1);color:var(--yellow2);border:1px solid rgba(250,240,137,.2)}
+.bubble-badge.positive{background:rgba(104,211,145,.12);color:var(--green2);border:1px solid rgba(104,211,145,.25)}
+.bubble-title{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:.5rem}
+.bubble-value{font-size:1rem;font-weight:500;color:var(--text2);margin-top:.3rem}
+.bubble-body{padding:1.4rem 1.8rem 1.8rem;display:flex;flex-direction:column;gap:1.3rem}
+.bubble-section{}
+.bubble-section-label{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem}
+.bubble-section-text{font-size:1rem;color:var(--text);line-height:1.75}
+.bubble-quote{font-family:'Georgia',serif;font-size:.9rem;color:var(--text3);font-style:italic;padding:.8rem 1.1rem;border-left:3px solid var(--border2);line-height:1.7;border-radius:0 var(--r2) var(--r2) 0;background:rgba(255,255,255,.02)}
+.bubble-impact{display:flex;align-items:flex-start;gap:10px;padding:1rem 1.2rem;background:rgba(229,62,62,.07);border:1px solid rgba(229,62,62,.15);border-radius:var(--r2);font-size:.95rem;color:var(--text2);line-height:1.7}
+.bubble-impact.positive{background:rgba(47,133,90,.07);border-color:rgba(104,211,145,.15);color:var(--text2)}
+.bubble-standard{display:flex;flex-direction:column;gap:.5rem}
+.std-row{display:flex;align-items:flex-start;gap:10px;padding:.6rem .9rem;border-radius:var(--r2);font-size:.88rem;line-height:1.5}
+.std-row.std-bad{background:rgba(229,62,62,.07);color:var(--red2)}
+.std-row.std-mid{background:rgba(214,158,46,.07);color:var(--yellow2)}
+.std-row.std-good{background:rgba(47,133,90,.07);color:var(--green2)}
+.std-row.std-this{background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.2);color:var(--gold)}
+.std-label{font-weight:700;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;margin-top:1px;min-width:70px}
+.advance-breakdown{display:flex;flex-direction:column;gap:.5rem}
+.adv-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.65rem .9rem;border-radius:var(--r2);font-size:.9rem;gap:1rem}
+.adv-row.adv-pocket{background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2)}
+.adv-row.adv-fund{background:rgba(113,128,150,.08);border:1px solid var(--border2)}
+.adv-row.adv-total{background:rgba(255,255,255,.04);border:1px solid var(--border2);font-weight:700}
+.adv-row.adv-breakeven{background:rgba(104,211,145,.05);border:1px solid rgba(104,211,145,.15)}
+.adv-label{color:var(--text2)}.adv-value{color:var(--text);font-weight:600;text-align:right}
+@media(max-width:600px){.score-card{flex-direction:column;align-items:flex-start;gap:1.5rem}header{padding:0 1rem}.bubble-title{font-size:1.25rem}.bubble-body{padding:1.2rem 1.4rem 1.6rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" onclick="resetToInput()" style="cursor:pointer" title="Back to home"><div class="logo-icon">⚖️</div><span>Deal<span>Checker</span></span></div>
+</header>
+<div class="hero">
+  <div class="hero-badge">🎤 Artist Protection Tool</div>
+  <h1>Know Your <em>Deal</em> Before You Sign</h1>
+  <p>Upload a contract PDF or paste offer text. Every clause is scored, explained in plain English, and flagged if it's sketchy. Click any card for the full breakdown.</p>
+</div>
+<div class="input-section">
+  <div class="examples-strip">
+    <div class="examples-label">Try a sample contract</div>
+    <div class="examples-row">
+      <button class="example-btn" onclick="loadExample('major')"><span class="example-dot red"></span>Major Label (Bad Deal)</button>
+      <button class="example-btn" onclick="loadExample('indie')"><span class="example-dot yellow"></span>Indie Label (Moderate)</button>
+      <button class="example-btn" onclick="loadExample('distribution')"><span class="example-dot green"></span>Distribution Deal (Good)</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="upload">📄 Upload PDF</button>
+    <button class="tab-btn" data-tab="paste">✏️ Paste / Type Text</button>
+  </div>
+  <div class="tab-panel active" id="tab-upload">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf"/>
+      <span class="drop-icon">📋</span>
+      <h3>Drop your contract PDF here</h3>
+      <p>or click to browse — PDF files only</p>
+      <div class="file-name" id="fileName" style="display:none"></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-paste">
+    <textarea class="paste-area" id="pasteText" placeholder="Paste the full contract text here — email offer, deal memo, or any contract language you've received..."></textarea>
+  </div>
+  <div class="error-box" id="errorBox"><strong>Error</strong><span id="errorMsg"></span></div>
+  <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()">🔍 Analyze This Contract</button>
+</div>
+<div class="methodology-note">Analysis is based on music industry standard benchmarks, publicly documented deal structures, and recording contract language used by major and independent labels. Not a substitute for legal counsel.</div>
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <ul class="loading-steps">
+    <li class="loading-step" data-step="0"><span class="step-dot"></span>Reading contract text…</li>
+    <li class="loading-step" data-step="1"><span class="step-dot"></span>Identifying deal structure…</li>
+    <li class="loading-step" data-step="2"><span class="step-dot"></span>Scanning key terms…</li>
+    <li class="loading-step" data-step="3"><span class="step-dot"></span>Checking for red flags…</li>
+    <li class="loading-step" data-step="4"><span class="step-dot"></span>Generating report…</li>
+  </ul>
+</div>
+<div id="results">
+  <div class="results-header">
+    <h2>Contract Analysis Report</h2>
+    <button class="new-analysis-btn" onclick="resetToInput()">↩ New Analysis</button>
+  </div>
+  <div class="score-card">
+    <div class="score-circle-wrap">
+      <div class="score-circle">
+        <svg class="score-svg" width="140" height="140" viewBox="0 0 140 140">
+          <circle class="score-bg" cx="70" cy="70" r="60"/>
+          <circle class="score-arc" id="scoreArc" cx="70" cy="70" r="60"/>
+        </svg>
+        <div class="score-label">
+          <span class="score-number" id="scoreNumber">—</span>
+          <span class="score-out">/100</span>
+        </div>
+      </div>
+    </div>
+    <div class="score-info">
+      <div class="score-grade" id="scoreGrade"></div>
+      <div class="score-rationale" id="scoreRationale"></div>
+    </div>
+  </div>
+  <div class="alert-banner danger" id="alertBanner"><span>⚠</span><span id="alertText"></span></div>
+  <div class="section-label">Key Deal Terms</div>
+  <div class="terms-grid" id="termsGrid"></div>
+  <div class="section-label">Red Flags &amp; Sketchy Clauses</div>
+  <div class="red-flags" id="redFlags"></div>
+  <div class="section-label" id="positivesLabel">Positives</div>
+  <div class="positives-grid" id="positivesGrid"></div>
+  <div class="section-label">Plain-English Summary</div>
+  <div class="summary-box" id="summaryBox"></div>
+  <div class="section-label">Negotiation Tips</div>
+  <div class="tips-list" id="tipsList"></div>
+</div>
+<div class="disclaimer">RecordCheck analyzes contract language against music industry standards and is for informational purposes only. It is <strong>not legal advice</strong>. Before signing any recording contract, consult a qualified entertainment attorney.</div>
+
+<!-- DETAIL BUBBLE MODAL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeBubble(event)">
+  <div class="detail-bubble" id="detailBubble">
+    <div class="bubble-header" id="bubbleHeader">
+      <button class="bubble-close" onclick="closeBubbleBtn()">✕</button>
+      <div class="bubble-badge" id="bubbleBadge"></div>
+      <div class="bubble-title" id="bubbleTitle"></div>
+      <div class="bubble-value" id="bubbleValueLine"></div>
+    </div>
+    <div class="bubble-body" id="bubbleBody"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<script src="analyzer.js"></script>
+</body>
+</html>
